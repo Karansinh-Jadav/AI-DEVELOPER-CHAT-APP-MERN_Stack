@@ -11,4 +11,6 @@ router.post('/login',registerUserValidationRule,userController.loginController);
 
 router.get('/profile',authVAlidate,userController.profileController);
 
+router.get('/logout',authVAlidate,userController.logoutController);
+
 export default router;
