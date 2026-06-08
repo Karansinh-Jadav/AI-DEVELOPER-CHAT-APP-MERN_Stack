@@ -1,0 +1,56 @@
+import userModel from '../models/user.model.js'
+import userService from '../services/user.service.js'
+import {validationResult} from 'express-validator'
+
+export const createUserController = async (req,res)=>{
+
+    try {
+        const token = userModel.generateJWT;
+        const user = await userService.createUser(req.body);
+        res.status(201).json({user,token});
+    }
+    catch(err){
+        res.status(400).send(err.message);
+    }
+}
+export const loginController = async (req,res)=>{
+
+    try {
+        const {email , password} = req.body;
+
+        const user = await userModel.findOne({email}).select("+password ");
+
+        if(!user){
+            return res.status(401).json({
+                errors: "Invalid Credentials"
+            })
+        }
+        const isMatchPassword = await user.isValidPassword(password);
+        if(!isMatchPassword){
+            return res.status(401).json({
+                errors: "Invalid Credentials"
+            })
+        }
+        const token = await user.generateJWT()
+
+        res.cookie("token",token).json
+        res.status(201).json({
+        message:"User logged in successfully",
+        user
+    })
+    }
+    catch(err){
+        res.status(400).send(err.message);
+    }
+}
+export const profileController = async (req,res)=>{
+
+    try {
+        res.status(201).json({
+            user:req.user
+    })
+    }
+    catch(err){
+        res.status(400).send(err.message);
+    }
+}
