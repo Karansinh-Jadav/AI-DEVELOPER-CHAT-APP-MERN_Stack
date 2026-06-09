@@ -29,7 +29,7 @@ const Register = () => {
             return;
         }
 
-        axios.post('/api/auth/register',
+        axios.post('/users/register',
             {
                 email: formData.email,
                 password: formData.password,

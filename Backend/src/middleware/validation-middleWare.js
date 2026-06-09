@@ -12,6 +12,13 @@ const validate = (req, res, next) => {
     next();
 };
 
+export const projectValidationRule = [
+    body('name')
+        .isString()
+        .withMessage('Please provide a valid email'),
+        
+        validate,
+];
 
 export const registerUserValidationRule = [
     body('email')

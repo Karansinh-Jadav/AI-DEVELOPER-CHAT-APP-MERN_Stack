@@ -1,6 +1,5 @@
 import userModel from '../models/user.model.js'
 import userService from '../services/user.service.js'
-import {validationResult} from 'express-validator'
 import redisClient from '../services/redis.service.js'
 
 export const createUserController = async (req,res)=>{
