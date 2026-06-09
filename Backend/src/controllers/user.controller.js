@@ -6,8 +6,10 @@ import redisClient from '../services/redis.service.js'
 export const createUserController = async (req,res)=>{
 
     try {
-        const token = userModel.generateJWT;
         const user = await userService.createUser(req.body);
+        const token = user.generateJWT();
+        res.cookie("token",token);
+        delete user._doc.password;
         res.status(201).json({user,token});
     }
     catch(err){
@@ -34,7 +36,8 @@ export const loginController = async (req,res)=>{
         }
         const token = await user.generateJWT()
 
-        res.cookie("token",token).json
+        res.cookie("token",token)
+        delete user._doc.password;
         res.status(201).json({
         message:"User logged in successfully",
         user
@@ -61,7 +64,9 @@ export const logoutController = async (req,res)=>{
         const token = req.cookies?.token ||
         req.headers.authorization?.split(" ")[1];
 
-        redisClient.set(token,'logout', 'EX' , 60*60*24);
+        await redisClient.set(token,'logout', 'EX' , 60*60*24);
+
+        res.clearCookie("token");
 
         res.status(200).json({
             message: 'Logged out successfully'
