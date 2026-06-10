@@ -13,5 +13,9 @@ router.get('/profile',authValidate,userController.profileController);
 
 router.get('/logout',authValidate,userController.logoutController);
 
+router.get('/all',authValidate,userController.getAllUsersController);
+
+
+
 
 export default router;

@@ -15,4 +15,11 @@ const createUser = async ({email,password})=> {
 
     return user;
 }
-export default {createUser}
+
+const getAllUsers = async({ userId })=>{
+    const users = await userModel.find({
+        _id: {$ne: userId}
+    });
+    return users;
+}
+export default {createUser,getAllUsers}

@@ -31,3 +31,14 @@ export const registerUserValidationRule = [
 
         validate
 ];
+export const userArrayValidation = [
+    body('projectId')
+    .isString()
+    .withMessage("Project ID is Required"),
+
+    body('users')
+    .isArray({ min: 1 })
+    .withMessage('Users must be a non-empty array')
+    .custom((users) =>  users.every(user => typeof user === 'string'))
+    .withMessage('All users must be strings'),
+];
