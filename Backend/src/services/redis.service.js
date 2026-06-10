@@ -1,17 +1,15 @@
+import dotenv from 'dotenv';
+dotenv.config();
+
 import Redis from "ioredis";
 
 
 const redisClient = new Redis({
-    host: "ink-gyroscopic-apparent-44824.db.redis.io",
-    port: 13673,
-    password: "qVWc82CkbnDNBF7iaEuwxErLppRQZP6M",
+    host: process.env.REDIS_HOST,
+    port: process.env.REDIS_PORT,
+    password: process.env.REDIS_PASSWORD,
     
 });
-console.log(process.env.REDIS_HOST);
-console.log(process.env.REDIS_PORT);
-console.log(process.env.REDIS_PASSWORD);
-
-
  redisClient.on("connect", () => {
     console.log("Redis connected");
 });
