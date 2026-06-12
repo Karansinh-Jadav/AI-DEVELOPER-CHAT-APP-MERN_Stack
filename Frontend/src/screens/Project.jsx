@@ -174,7 +174,7 @@ const Project = () => {
                         onClick={() => setIsMembersOpen(true)}
                         className="w-10 h-10 rounded-xl bg-indigo-600/20 hover:bg-indigo-600/30 flex items-center justify-center transition"
                     >
-                        <i className="ri-team-line text-lg"></i>
+                        <i className="ri-team-line text-xl"></i>
                     </button>
 
                 </div>
@@ -224,7 +224,7 @@ const Project = () => {
                         <button
                             className="w-12 rounded-xl bg-linear-to-r from-indigo-600 to-purple-600 flex items-center justify-center hover:opacity-90"
                         >
-                            <i className="ri-send-plane-fill"></i>
+                            <i className="ri-send-plane-fill text-xl"></i>
                         </button>
 
                     </div>
