@@ -11,6 +11,7 @@ const Home = () => {
   const [project, setProject] = useState([])
 
   const navigate = useNavigate();
+  
 
   function createProject(e) {
     e.preventDefault();
@@ -30,6 +31,16 @@ const Home = () => {
     setProjectName("");
     setIsModalOpen(false);
   }
+  function logOut() {
+  axios.get('/users/logout', { withCredentials: true })
+    .then(() => {
+      localStorage.removeItem("token"); // if you use token
+      navigate("/login"); // better than reload
+    })
+    .catch(err => {
+      console.log(err);
+    });
+}
   useEffect(()=>{
 
     axios.get('/project/all')
@@ -59,7 +70,10 @@ const Home = () => {
           Manage and collaborate on your AI development projects
         </p>
       </div>
-
+      <button
+      onClick={logOut}
+      className="flex items-center gap-2 px-5 py-3 rounded-xl font-medium text-white bg-linear-to-r from-indigo-600 to-purple-600 hover:scale-[1.02] active:scale-[0.98] transition-all duration-300 shadow-lg shadow-indigo-500/20"
+      >LogOut</button>
       <button
         onClick={() => setIsModalOpen(true)}
         className="flex items-center gap-2 px-5 py-3 rounded-xl font-medium text-white bg-linear-to-r from-indigo-600 to-purple-600 hover:scale-[1.02] active:scale-[0.98] transition-all duration-300 shadow-lg shadow-indigo-500/20"

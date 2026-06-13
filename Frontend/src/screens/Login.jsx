@@ -2,6 +2,7 @@ import { useState, useContext } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import axios from '../config/axios.js'
 import {UserContext} from '../context/user.context.jsx'
+import { FcGoogle } from "react-icons/fc";
 
 const Login = () => {
   const [formData, setFormData] = useState({
@@ -119,8 +120,9 @@ const Login = () => {
 
           {/* Google Button */}
           <button
-            className="w-full py-3 rounded-xl border border-zinc-700 text-zinc-300 hover:bg-zinc-800 transition"
+            className="w-full flex items-center justify-center gap-4 py-3 rounded-xl border border-zinc-700 text-zinc-300 hover:bg-zinc-800 transition"
           >
+            <FcGoogle className="text-2xl" />
             Continue with Google
           </button>
 

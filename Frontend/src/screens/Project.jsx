@@ -1,6 +1,8 @@
-import React, { useEffect, useState } from 'react'
-import { useLocation } from 'react-router-dom'
+import React, { useEffect, useState, useContext } from 'react'
+import { data, useLocation } from 'react-router-dom'
 import axios from '../config/axios.js'
+import { initializeSocket, receiveMessage, sendMessage } from '../config/socket.js'
+import {UserContext} from '../context/user.context'
 
 const Project = () => {
     const location = useLocation();
@@ -10,10 +12,10 @@ const Project = () => {
     const [search, setSearch] = useState("");
     const [debouncedSearch, setDebouncedSearch] = useState("");
     const [project, setProject] = useState(location.state.project);
+    const [message, setMessage] = useState('')
+    const {user} = useContext(UserContext);
 
     const [users, setUsers] = useState([]);
-
-
 
     const handleUserSelect = (id) => {
         if (selectedUsers.includes(id)) {
@@ -25,6 +27,11 @@ const Project = () => {
         }
     };
     useEffect(() => {
+        initializeSocket(project._id);
+
+        receiveMessage('project-message',data=>{
+            console.log(data);
+        })
         axios.get('/users/all')
             .then(res => {
                 setUsers(res.data.allUsers)
@@ -71,6 +78,15 @@ const Project = () => {
                 console.log(err);
 
             })
+    }
+    function sendMsg(){
+        console.log(user);
+        
+        sendMessage('project-message',{
+            message,
+            sender: user._id,
+        })
+        setMessage("")
     }
 
     return (
@@ -138,8 +154,8 @@ const Project = () => {
                                     <i className="ri-user-3-fill text-white"></i>
                                 </div>
 
-                                <div>
-                                    <p className="text-sm font-medium text-white">
+                                <div className='max-w-[75%]'>
+                                    <p className="text-sm font-medium text-white overflow-hidden">
                                         {user.email}
                                     </p>
                                     <p className="text-xs text-zinc-500">
@@ -216,12 +232,15 @@ const Project = () => {
                     <div className="flex gap-2">
 
                         <input
+                            onChange={(e)=>{setMessage(e.target.value)}}
+                            value={message}
                             type="text"
                             placeholder="Ask AI or chat..."
                             className="flex-1 bg-zinc-900 border border-zinc-700 rounded-xl px-4 py-3 outline-none focus:border-indigo-500"
                         />
 
                         <button
+                            onClick={sendMsg}
                             className="w-12 rounded-xl bg-linear-to-r from-indigo-600 to-purple-600 flex items-center justify-center hover:opacity-90"
                         >
                             <i className="ri-send-plane-fill text-xl"></i>

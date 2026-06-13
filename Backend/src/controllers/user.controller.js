@@ -39,7 +39,7 @@ export const loginController = async (req,res)=>{
         delete user._doc.password;
         res.status(201).json({
         message:"User logged in successfully",
-        user
+        user,token,
     })
     }
     catch(err){
@@ -49,8 +49,10 @@ export const loginController = async (req,res)=>{
 export const profileController = async (req,res)=>{
 
     try {
+        const email = req.user.email;
+        const user = await userModel.findOne({email}).select("+password ");
         res.status(201).json({
-            user:req.user
+            user,
     })
     }
     catch(err){
