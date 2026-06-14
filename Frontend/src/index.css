@@ -4,3 +4,12 @@ html, body, #root {
   margin: 0;
   padding: 0;
 }
+.message-box{
+  scroll-behavior: smooth;
+}
+.message-box::-webkit-scrollbar{
+  display: none;
+}
+.workSpace{
+
+}

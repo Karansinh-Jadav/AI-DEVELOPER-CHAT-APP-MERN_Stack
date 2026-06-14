@@ -1,8 +1,8 @@
-import React, { useEffect, useState, useContext } from 'react'
+import React, { useEffect, useState, useContext, useRef } from 'react'
 import { data, useLocation } from 'react-router-dom'
 import axios from '../config/axios.js'
 import { initializeSocket, receiveMessage, sendMessage } from '../config/socket.js'
-import {UserContext} from '../context/user.context'
+import { UserContext } from '../context/user.context'
 
 const Project = () => {
     const location = useLocation();
@@ -13,9 +13,11 @@ const Project = () => {
     const [debouncedSearch, setDebouncedSearch] = useState("");
     const [project, setProject] = useState(location.state.project);
     const [message, setMessage] = useState('')
-    const {user} = useContext(UserContext);
+    const { user } = useContext(UserContext);
 
     const [users, setUsers] = useState([]);
+
+    const messageBox = React.createRef();
 
     const handleUserSelect = (id) => {
         if (selectedUsers.includes(id)) {
@@ -29,8 +31,8 @@ const Project = () => {
     useEffect(() => {
         initializeSocket(project._id);
 
-        receiveMessage('project-message',data=>{
-            console.log(data);
+        receiveMessage('project-message', data => {
+            appendIncomingMessage(data)
         })
         axios.get('/users/all')
             .then(res => {
@@ -56,13 +58,13 @@ const Project = () => {
     }, [search]);
 
     const filteredUsers = users.filter(user =>
-    user.email.toLowerCase().includes(
-        debouncedSearch.toLowerCase()
-    ) &&
-    !project.users?.some(
-        pUser => pUser._id === user._id
-    )
-);
+        user.email.toLowerCase().includes(
+            debouncedSearch.toLowerCase()
+        ) &&
+        !project.users?.some(
+            pUser => pUser._id === user._id
+        )
+    );
 
     function addCollaborators() {
         axios.put('/project/add-user', {
@@ -79,14 +81,55 @@ const Project = () => {
 
             })
     }
-    function sendMsg(){
-        console.log(user);
-        
-        sendMessage('project-message',{
+    function sendMsg() {
+        appendOutgoingMessage(message)
+
+        sendMessage('project-message', {
             message,
-            sender: user._id,
+            sender: user.email,
         })
         setMessage("")
+    }
+    function appendIncomingMessage(messageObject) {
+        const messageBox = document.querySelector('.message-box')
+
+        const message = document.createElement('div')
+        message.classList.add("max-w-[85%]")
+        message.innerHTML = `
+        <p class="text-xs text-zinc-500 mb-1 ml-2">
+                            ${messageObject.sender}
+                        </p>
+
+                        <div class="bg-zinc-800 rounded-2xl p-3">
+                            <p class="wrap-break-word text-sm">
+                                ${messageObject.message}
+                            </p>
+                        </div>
+        `
+        messageBox.appendChild(message)
+        scrollToBottom();
+    }
+    function appendOutgoingMessage(message) {
+        const messageBox = document.querySelector('.message-box')
+
+        const newMessage = document.createElement('div')
+        newMessage.classList.add("max-w-[85%]", "ml-auto")
+        newMessage.innerHTML = `
+        <p class="text-xs text-zinc-500 mb-1 ml-2">
+                            ${user.email}
+                        </p>
+
+                        <div class="wrap-break-word bg-linear-to-r from-indigo-600 to-purple-600 rounded-2xl p-3">
+                            <p class="text-sm">
+                                ${message}
+                            </p>
+                        </div>
+        `
+        messageBox.appendChild(newMessage)
+        scrollToBottom();
+    }
+    function scrollToBottom() {
+        messageBox.current.scrollTop = messageBox.current.scrollHeight;
     }
 
     return (
@@ -171,7 +214,7 @@ const Project = () => {
                 </div>
             </div>
             {/* Chat Section */}
-            <div className="relative z-10 w-[30%] border-r border-zinc-800 flex flex-col bg-zinc-950/50 backdrop-blur-md">
+            <div className="max-[450px]:w-full relative z-10 w-[30%] border-r border-zinc-800 flex flex-col bg-zinc-950/50 backdrop-blur-md">
 
                 {/* Header */}
                 <div className="h-16 border-b border-zinc-800 flex items-center justify-between px-5">
@@ -196,51 +239,39 @@ const Project = () => {
                 </div>
 
                 {/* Messages */}
-                <div className="flex-1 overflow-y-auto p-4 space-y-4">
+                <div
+                    ref={messageBox}
+                    className="message-box flex-1 overflow-y-auto p-4 space-y-4">
 
-                    {/* Other User Message */}
-                    <div className="max-w-[85%]">
-                        <p className="text-xs text-zinc-500 mb-1 ml-2">
-                            john@gmail.com
-                        </p>
-
-                        <div className="bg-zinc-800 rounded-2xl p-3">
-                            <p className="text-sm">
-                                Hello team 👋
-                            </p>
-                        </div>
-                    </div>
-
-                    {/* Current User Message */}
-                    <div className="max-w-[85%] ml-auto">
-                        <p className="text-xs text-zinc-400 mb-1 text-right mr-2">
-                            karan@gmail.com
-                        </p>
-
-                        <div className="bg-linear-to-r from-indigo-600 to-purple-600 rounded-2xl p-3">
-                            <p className="text-sm">
-                                Let's start building the AI app.
-                            </p>
-                        </div>
-                    </div>
 
                 </div>
 
                 {/* Input */}
                 <div className="p-4 border-t border-zinc-800">
 
-                    <div className="flex gap-2">
+                    <div className="flex gap-2 overflow-hidden">
 
                         <input
-                            onChange={(e)=>{setMessage(e.target.value)}}
                             value={message}
                             type="text"
+                            onChange={(e) => { setMessage(e.target.value) }}
+                            onKeyDown={(e) => {
+                                
+                                
+                                if (message.trim() != ''  && e.key === 'Enter') {
+                                    sendMsg();
+                                }
+                            }}
                             placeholder="Ask AI or chat..."
                             className="flex-1 bg-zinc-900 border border-zinc-700 rounded-xl px-4 py-3 outline-none focus:border-indigo-500"
                         />
 
                         <button
-                            onClick={sendMsg}
+                            onClick={()=>{
+                                if(message.trim()!=""){
+                                    sendMsg()
+                                }
+                            }}
                             className="w-12 rounded-xl bg-linear-to-r from-indigo-600 to-purple-600 flex items-center justify-center hover:opacity-90"
                         >
                             <i className="ri-send-plane-fill text-xl"></i>
@@ -253,7 +284,7 @@ const Project = () => {
             </div>
 
             {/* AI Workspace */}
-            <div className="relative z-10 w-[70%] flex items-center justify-center">
+            <div className="workSpace max-[450px]:hidden relative z-10 w-[70%] flex items-center justify-center">
 
                 <div className="absolute top-20 right-20 w-72 h-72 bg-indigo-600/10 rounded-full blur-3xl" />
                 <div className="absolute bottom-20 left-20 w-72 h-72 bg-purple-600/10 rounded-full blur-3xl" />
