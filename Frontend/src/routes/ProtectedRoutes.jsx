@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Navigate } from "react-router-dom";
 import axios from "../config/axios";
+import Loading from "../components/Loading";
 
 const ProtectedRoute = ({ children }) => {
     const [loading, setLoading] = useState(true);
@@ -13,7 +14,7 @@ const ProtectedRoute = ({ children }) => {
             .finally(() => setLoading(false));
     }, []);
 
-    if (loading) return <div>Loading...</div>;
+    if (loading) return <Loading/>;
 
     return isAuth ? children : <Navigate to="/NotLoggedIn" replace />;
 };
