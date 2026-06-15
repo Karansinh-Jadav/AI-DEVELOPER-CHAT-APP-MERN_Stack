@@ -100,7 +100,7 @@ const Project = () => {
                             ${messageObject.sender}
                         </p>
 
-                        <div class="bg-zinc-800 rounded-2xl p-3">
+                        <div class="bg-zinc-800 w-fit rounded-2xl p-3">
                             <p class="wrap-break-word text-sm">
                                 ${messageObject.message}
                             </p>
@@ -113,13 +113,13 @@ const Project = () => {
         const messageBox = document.querySelector('.message-box')
 
         const newMessage = document.createElement('div')
-        newMessage.classList.add("max-w-[85%]", "ml-auto")
+        newMessage.classList.add( "max-w-[85%]", "ml-auto","flex","flex-col","items-end")
         newMessage.innerHTML = `
         <p class="text-xs text-zinc-500 mb-1 ml-2">
                             ${user.email}
                         </p>
 
-                        <div class="wrap-break-word bg-linear-to-r from-indigo-600 to-purple-600 rounded-2xl p-3">
+                        <div class="w-fit  wrap-break-word bg-linear-to-r from-indigo-600 to-purple-600 rounded-2xl p-3">
                             <p class="text-sm">
                                 ${message}
                             </p>
@@ -241,7 +241,7 @@ const Project = () => {
                 {/* Messages */}
                 <div
                     ref={messageBox}
-                    className="message-box flex-1 overflow-y-auto p-4 space-y-4">
+                    className="message-box flex-1 overflow-y-auto p-4 space-y-4 ">
 
 
                 </div>
