@@ -256,9 +256,9 @@ const Project = () => {
                             type="text"
                             onChange={(e) => { setMessage(e.target.value) }}
                             onKeyDown={(e) => {
-                                
-                                
-                                if (message.trim() != ''  && e.key === 'Enter') {
+
+
+                                if (message.trim() != '' && e.key === 'Enter') {
                                     sendMsg();
                                 }
                             }}
@@ -267,8 +267,8 @@ const Project = () => {
                         />
 
                         <button
-                            onClick={()=>{
-                                if(message.trim()!=""){
+                            onClick={() => {
+                                if (message.trim() != "") {
                                     sendMsg()
                                 }
                             }}
