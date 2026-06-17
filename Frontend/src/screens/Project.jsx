@@ -3,6 +3,9 @@ import { data, useLocation } from 'react-router-dom'
 import axios from '../config/axios.js'
 import { initializeSocket, receiveMessage, sendMessage } from '../config/socket.js'
 import { UserContext } from '../context/user.context'
+import Markdown from 'markdown-to-jsx'
+import MarkdownRenderer from '../components/Markdown.jsx'
+import Editor from "@monaco-editor/react";
 
 const Project = () => {
     const location = useLocation();
@@ -13,7 +16,11 @@ const Project = () => {
     const [debouncedSearch, setDebouncedSearch] = useState("");
     const [project, setProject] = useState(location.state.project);
     const [message, setMessage] = useState('')
+    const [messages, setMessages] = useState([])
     const { user } = useContext(UserContext);
+
+    const [fileTree, setFileTree] = useState({});
+    const [activeFile, setActiveFile] = useState(null);
 
     const [users, setUsers] = useState([]);
 
@@ -32,7 +39,23 @@ const Project = () => {
         initializeSocket(project._id);
 
         receiveMessage('project-message', data => {
-            appendIncomingMessage(data)
+            setMessages(prevMessages => [...prevMessages, data])
+
+            console.log(typeof (data));
+            console.log(data);
+
+
+            const { fileTree } = data.message;
+            console.log(fileTree);
+            if (fileTree) {
+                console.log(fileTree);
+
+                setFileTree(fileTree);
+
+                // auto-select first file
+                const firstFile = Object.keys(fileTree)[0];
+                setActiveFile(firstFile);
+            }
         })
         axios.get('/users/all')
             .then(res => {
@@ -82,55 +105,21 @@ const Project = () => {
             })
     }
     function sendMsg() {
-        appendOutgoingMessage(message)
-
-        sendMessage('project-message', {
+        const outgoingMessage = {
             message,
             sender: user.email,
-        })
+        }
+
+        setMessages(prevMessages => [...prevMessages, outgoingMessage])
+
+        sendMessage('project-message', outgoingMessage)
         setMessage("")
     }
-    function appendIncomingMessage(messageObject) {
-        const messageBox = document.querySelector('.message-box')
-
-        const message = document.createElement('div')
-        message.classList.add("max-w-[85%]")
-        message.innerHTML = `
-        <p class="text-xs text-zinc-500 mb-1 ml-2">
-                            ${messageObject.sender}
-                        </p>
-
-                        <div class="bg-zinc-800 w-fit rounded-2xl p-3">
-                            <p class="wrap-break-word text-sm">
-                                ${messageObject.message}
-                            </p>
-                        </div>
-        `
-        messageBox.appendChild(message)
-        scrollToBottom();
-    }
-    function appendOutgoingMessage(message) {
-        const messageBox = document.querySelector('.message-box')
-
-        const newMessage = document.createElement('div')
-        newMessage.classList.add( "max-w-[85%]", "ml-auto","flex","flex-col","items-end")
-        newMessage.innerHTML = `
-        <p class="text-xs text-zinc-500 mb-1 ml-2">
-                            ${user.email}
-                        </p>
-
-                        <div class="w-fit  wrap-break-word bg-linear-to-r from-indigo-600 to-purple-600 rounded-2xl p-3">
-                            <p class="text-sm">
-                                ${message}
-                            </p>
-                        </div>
-        `
-        messageBox.appendChild(newMessage)
-        scrollToBottom();
-    }
-    function scrollToBottom() {
-        messageBox.current.scrollTop = messageBox.current.scrollHeight;
-    }
+    useEffect(() => {
+        if (messageBox.current) {
+            messageBox.current.scrollTop = messageBox.current.scrollHeight;
+        }
+    }, [messages]);
 
     return (
 
@@ -242,8 +231,41 @@ const Project = () => {
                 <div
                     ref={messageBox}
                     className="message-box flex-1 overflow-y-auto p-4 space-y-4 ">
+                    {messages.map((msg, idx) => {
+                        const isOutgoing = msg.sender === user.email
+                        const isAI = msg.sender === 'AI'
+                        return (
+                            <div
+                                key={idx}
+                                className={`max-w-[85%] ${isOutgoing ? 'ml-auto flex flex-col items-end' : ''}`}
+                            >
+                                <p className="text-xs text-zinc-500 mb-1 ml-2">
+                                    {msg.sender}
+                                </p>
+                                {isOutgoing ? (<div className={'max-w-75 w-fit wrap-break-word bg-linear-to-r from-indigo-600 to-purple-600 rounded-2xl p-3'}>
+                                    <p className="wrap-break-word text-sm">
+                                        {msg.message}
+                                    </p>
+                                </div>
+                                ) : (
+                                    isAI ? (
+                                        <div className="ai-msg max-h-96 max-w-75 overflow-auto rounded-2xl border border-indigo-500/20 bg-gradient-to-br from-indigo-950/40 to-purple-950/40 backdrop-blur-xl p-4 text-sm text-zinc-200">
+                                            {/* <Markdown>{msg.message.text}</Markdown> */}
+                                            <MarkdownRenderer content={msg.message.text} />
+                                            {/* {msg.message.text} */}
+                                        </div>
+                                    ) : (
+                                        <div className={`bg-zinc-800 w-fit rounded-2xl p-3`}>
+                                            <p className="wrap-break-word text-sm">
+                                                {msg.message}
+                                            </p>
+                                        </div>
+                                    )
 
-
+                                )}
+                            </div>
+                        )
+                    })}
                 </div>
 
                 {/* Input */}
@@ -284,25 +306,66 @@ const Project = () => {
             </div>
 
             {/* AI Workspace */}
-            <div className="workSpace max-[450px]:hidden relative z-10 w-[70%] flex items-center justify-center">
+            <div className="workSpace max-[450px]:hidden relative z-10 w-[70%] flex">
 
-                <div className="absolute top-20 right-20 w-72 h-72 bg-indigo-600/10 rounded-full blur-3xl" />
-                <div className="absolute bottom-20 left-20 w-72 h-72 bg-purple-600/10 rounded-full blur-3xl" />
+                {/* Left Panel - File Explorer */}
+                <div className="w-1/4 border-r border-zinc-800 bg-zinc-950/40 p-4">
 
-                <div className="text-center">
+                    <h3 className="text-sm text-zinc-400 mb-3">FILES</h3>
 
-                    <div className="w-24 h-24 mx-auto rounded-3xl bg-zinc-900/80 border border-zinc-800 flex items-center justify-center">
-                        <i className="ri-code-box-line text-5xl text-indigo-400"></i>
+                    <div className="space-y-2">
+                        {Object.keys(fileTree).map((fileName) => (
+                            <div
+                                key={fileName}
+                                onClick={() => setActiveFile(fileName)}
+                                className={`px-3 py-2 rounded-lg text-sm cursor-pointer transition
+                ${activeFile === fileName
+                                        ? "bg-indigo-600/20 text-indigo-300"
+                                        : "hover:bg-zinc-800 text-zinc-400"
+                                    }`}
+                            >
+                                {fileName}
+                            </div>
+                        ))}
                     </div>
 
-                    <h2 className="text-3xl font-bold mt-6">
-                        AI Workspace
-                    </h2>
+                </div>
 
-                    <p className="text-zinc-500 mt-3 max-w-md">
-                        Generated code, files, previews, terminal output,
-                        and AI artifacts will appear here.
-                    </p>
+                {/* Right Panel - Code Editor */}
+                <div className="w-3/4 p-6 relative">
+
+                    {/* Background effects */}
+                    <div className="absolute top-10 right-10 w-72 h-72 bg-indigo-600/10 rounded-full blur-3xl" />
+                    <div className="absolute bottom-10 left-10 w-72 h-72 bg-purple-600/10 rounded-full blur-3xl" />
+
+                    {/* Code Area */}
+                    <div className="relative z-10">
+
+                        <div className="flex items-center justify-between mb-4">
+                            <h2 className="text-lg font-semibold text-zinc-200">
+                                {activeFile || "No file selected"}
+                            </h2>
+                        </div>
+                        {activeFile && <div className="h-[650px]  overflow-hidden rounded-2xl border border-zinc-800 bg-zinc-900/50 backdrop-blur">
+                            <Editor
+                                height="100%"
+                                theme="vs-dark"
+                                path={activeFile}
+                                value={fileTree[activeFile]?.content || ""}
+                                onChange={(value) => {
+                                    setFileTree(prev => ({
+                                        ...prev,
+                                        [activeFile]: {
+                                            ...prev[activeFile],
+                                            content: value || ""
+                                        }
+                                    }));
+                                }}
+                            />
+                        </div>}
+                        
+
+                    </div>
 
                 </div>
 
