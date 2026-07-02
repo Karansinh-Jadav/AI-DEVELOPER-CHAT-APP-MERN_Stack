@@ -8,7 +8,8 @@ const Home = () => {
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [projectName, setProjectName] = useState("");
-  const [project, setProject] = useState([])
+  const [project, setProject] = useState([]);
+  const [isProfileOpen, setIsProfileOpen] = useState(false);
 
   const navigate = useNavigate();
   
@@ -70,17 +71,62 @@ const Home = () => {
           Manage and collaborate on your AI development projects
         </p>
       </div>
-      <button
-      onClick={logOut}
-      className="flex items-center gap-2 px-5 py-3 rounded-xl font-medium text-white bg-linear-to-r from-indigo-600 to-purple-600 hover:scale-[1.02] active:scale-[0.98] transition-all duration-300 shadow-lg shadow-indigo-500/20"
-      >LogOut</button>
-      <button
-        onClick={() => setIsModalOpen(true)}
-        className="flex items-center gap-2 px-5 py-3 rounded-xl font-medium text-white bg-linear-to-r from-indigo-600 to-purple-600 hover:scale-[1.02] active:scale-[0.98] transition-all duration-300 shadow-lg shadow-indigo-500/20"
-      >
-        <i className="ri-add-line text-xl font-semibold"></i>
-        <span>Create Project</span>
-      </button>
+      <div className="flex items-center gap-4">
+        <button
+          onClick={() => setIsModalOpen(true)}
+          className="flex items-center gap-2 px-5 py-3 rounded-xl font-medium text-white bg-linear-to-r from-indigo-600 to-purple-600 hover:scale-[1.02] active:scale-[0.98] transition-all duration-300 shadow-lg shadow-indigo-500/20 cursor-pointer"
+        >
+          <i className="ri-add-line text-xl font-semibold"></i>
+          <span>Create Project</span>
+        </button>
+
+        {/* User Profile Dropdown */}
+        <div className="relative">
+          <button
+            onClick={() => setIsProfileOpen(!isProfileOpen)}
+            className="flex items-center justify-center w-12 h-12 rounded-xl bg-zinc-900 border border-zinc-800 hover:border-indigo-500/50 hover:scale-[1.02] active:scale-[0.98] transition-all duration-300 shadow-lg cursor-pointer"
+            title="User Profile"
+          >
+            <i className="ri-user-3-line text-xl text-zinc-300"></i>
+          </button>
+
+          {isProfileOpen && (
+            <>
+              {/* Overlay to close the dropdown when clicking outside */}
+              <div 
+                className="fixed inset-0 z-40" 
+                onClick={() => setIsProfileOpen(false)}
+              />
+              
+              {/* Dropdown Card */}
+              <div className="absolute right-0 mt-3 w-64 bg-zinc-900/90 backdrop-blur-xl border border-zinc-800 rounded-2xl shadow-2xl p-4 z-50">
+                <div className="flex items-center gap-3 pb-3 mb-3 border-b border-zinc-800">
+                  <div className="w-10 h-10 rounded-full bg-linear-to-r from-indigo-600 to-purple-600 flex items-center justify-center shrink-0">
+                    <i className="ri-user-3-fill text-white"></i>
+                  </div>
+                  <div className="overflow-hidden">
+                    <p className="text-xs text-zinc-500 font-semibold uppercase tracking-wider">Signed in as</p>
+                    <p className="text-sm font-medium text-zinc-200 truncate" title={user?.email}>
+                      {user?.email || "User"}
+                    </p>
+                  </div>
+                </div>
+
+                <button
+                  onClick={() => {
+                    setIsProfileOpen(false);
+                    logOut();
+                  }}
+                  className="w-full flex items-center gap-2 px-3 py-2.5 rounded-xl text-sm font-medium text-rose-400 hover:bg-rose-500/10 hover:text-rose-300 transition-all duration-200 cursor-pointer"
+                >
+                  <i className="ri-logout-box-line text-lg"></i>
+                  <span>Log Out</span>
+                </button>
+              </div>
+            </>
+          )}
+        </div>
+      </div>
     </div>
 
     {/* Projects Grid */}

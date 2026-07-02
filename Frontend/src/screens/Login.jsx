@@ -29,7 +29,7 @@ const Login = () => {
         setUser(res.data.user)
         navigate('/')
     }).catch((err)=>{
-        console.log(err.response.data);
+        console.log(err.response?.data || err.message);
         
     })
   };

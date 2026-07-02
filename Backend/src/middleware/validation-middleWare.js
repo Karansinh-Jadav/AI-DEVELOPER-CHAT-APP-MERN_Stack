@@ -15,7 +15,7 @@ const validate = (req, res, next) => {
 export const projectValidationRule = [
     body('name')
         .isString()
-        .withMessage('Please provide a valid email'),
+        .withMessage('Please provide a valid project name'),
         
         validate,
 ];
@@ -41,4 +41,6 @@ export const userArrayValidation = [
     .withMessage('Users must be a non-empty array')
     .custom((users) =>  users.every(user => typeof user === 'string'))
     .withMessage('All users must be strings'),
+
+    validate
 ];

@@ -20,7 +20,7 @@ const AppRoutes = () => {
           } />
         <Route path='/*' element={<NotFound />} />
         <Route path='/login' element={<Login />} />
-        <Route path='/Register' element={<Register />} />
+        <Route path='/register' element={<Register />} />
         <Route path='/NotLoggedIn' element={<NotLoggedIn />} />
         <Route path='/project' element={
           <ProtectedRoute>

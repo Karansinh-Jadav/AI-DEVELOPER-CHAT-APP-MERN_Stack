@@ -39,11 +39,24 @@ io.use(async (socket,next) => {
             return next(new Error("ProjectId error: Invalid ProjectId")); 
         }
         
-        socket.project = await projectModel.findById(projectId);
+        const project = await projectModel.findById(projectId);
+        if (!project) {
+            return next(new Error("ProjectId error: Project not found"));
+        }
+        socket.project = project;
 
         const decoded = jwt.verify(token, process.env.JWT_SECRET);
-
         socket.user = decoded;
+
+        const user = await userModel.findOne({ email: decoded.email });
+        if (!user) {
+            return next(new Error("Authentication error: User not found"));
+        }
+
+        const isMember = project.users.some(userId => userId.toString() === user._id.toString());
+        if (!isMember) {
+            return next(new Error("Authentication error: User does not belong to this project"));
+        }
     
         next(); 
     } catch (err) {

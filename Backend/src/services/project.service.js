@@ -59,7 +59,7 @@ export const addUsersToProject = async ({projectId, users,userId}) =>{
     if ( !Array.isArray(users) || users.some(userId => !mongoose.Types.ObjectId.isValid(userId))) {
         throw new Error("Users must be a non-empty array");
     }
-    const project = await projectModel.find({
+    const project = await projectModel.findOne({
         _id: projectId,
         users: userId
     })
