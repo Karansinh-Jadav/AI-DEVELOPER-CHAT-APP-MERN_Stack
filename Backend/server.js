@@ -9,6 +9,7 @@ import jwt from 'jsonwebtoken'
 import mongoose from 'mongoose'
 import projectModel from './src/models/project.model.js'
 import {generateResult} from './src/services/ai.service.js'
+import userModel from './src/models/user.model.js'
 
 connectDB();
 
@@ -32,15 +33,20 @@ io.use(async (socket,next) => {
         const token = socket.handshake.auth?.token || socket.handshake.headers.authorization?.split(" ")[1];
         const projectId = socket.handshake.query.projectId;
 
+        console.log("Socket Connection Attempt - Project ID:", projectId);
+
         if (!token) {
+            console.error("Socket Auth Failed: Token missing");
             return next(new Error("Authentication error: Token missing"));
         }
         if(!mongoose.Types.ObjectId.isValid(projectId)){
+            console.error("Socket Auth Failed: Invalid Project ID format:", projectId);
             return next(new Error("ProjectId error: Invalid ProjectId")); 
         }
         
         const project = await projectModel.findById(projectId);
         if (!project) {
+            console.error("Socket Auth Failed: Project not found in DB:", projectId);
             return next(new Error("ProjectId error: Project not found"));
         }
         socket.project = project;
@@ -50,17 +56,21 @@ io.use(async (socket,next) => {
 
         const user = await userModel.findOne({ email: decoded.email });
         if (!user) {
+            console.error("Socket Auth Failed: User not found in DB:", decoded.email);
             return next(new Error("Authentication error: User not found"));
         }
 
         const isMember = project.users.some(userId => userId.toString() === user._id.toString());
         if (!isMember) {
+            console.error("Socket Auth Failed: User", user.email, "is not a member of project", project.name);
             return next(new Error("Authentication error: User does not belong to this project"));
         }
     
+        console.log("Socket Auth Success: User", user.email, "connected to project", project.name);
         next(); 
     } catch (err) {
-        next(new Error("Authentication error: Invalid token"));
+        console.error("Socket Auth Exception:", err);
+        next(err);
     }
 })
 
