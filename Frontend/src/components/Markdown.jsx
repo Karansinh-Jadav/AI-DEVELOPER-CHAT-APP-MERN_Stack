@@ -6,7 +6,7 @@ function MarkdownRenderer({ content }) {
   // const messageObject = JSON.parse(content);
   // const content = fileTree[activeFile]?.content || "";
 
-console.log(JSON.stringify(content));
+// console.log(JSON.stringify(content));
   return (
     <ReactMarkdown
       components={{

@@ -6,6 +6,7 @@ import { UserContext } from '../context/user.context'
 import Markdown from 'markdown-to-jsx'
 import MarkdownRenderer from '../components/Markdown.jsx'
 import Editor from "@monaco-editor/react";
+import { getWebContainer } from '../config/webContainer.js'
 
 const Project = () => {
     const location = useLocation();
@@ -24,6 +25,8 @@ const Project = () => {
 
     const [users, setUsers] = useState([]);
 
+    const [webConatiner, setWebConatiner] = useState(null)
+
     const messageBox = React.createRef();
 
     const handleUserSelect = (id) => {
@@ -38,17 +41,23 @@ const Project = () => {
     useEffect(() => {
         initializeSocket(project._id);
 
-        receiveMessage('project-message', data => {
-            setMessages(prevMessages => [...prevMessages, data])
+        if (!webConatiner) {
+            getWebContainer().then(container => {
+                setWebConatiner(container)
+                console.log("container started");
 
-            console.log(typeof (data));
-            console.log(data);
+            })
+        }
+
+        receiveMessage('project-message', async data => {
+            setMessages(prevMessages => [...prevMessages, data])
 
 
             const { fileTree } = data.message;
             console.log(fileTree);
             if (fileTree) {
                 console.log(fileTree);
+               
 
                 setFileTree(fileTree);
 
@@ -121,6 +130,61 @@ const Project = () => {
         }
     }, [messages]);
 
+    const runCode = async () => {
+        if (!webConatiner) return;
+
+        try {
+            console.clear();
+
+            await webConatiner.mount(fileTree);
+
+            console.log("Installing...");
+
+            const install = await webConatiner.spawn("npm", ["install"]);
+
+            install.output.pipeTo(
+                new WritableStream({
+                    write(data) {
+                        console.log(data);
+                    },
+                })
+            );
+
+            const code = await install.exit;
+
+            if (code !== 0) {
+                console.log("Install failed");
+                return;
+            }
+
+            console.log("Starting...");
+
+            const devServer = await webConatiner.spawn("npm", ["run", "dev"]);
+
+            devServer.output.pipeTo(
+                new WritableStream({
+                    write(data) {
+                        console.log(data);
+                    },
+                })
+            );
+
+        } catch (err) {
+            console.error(err);
+        }
+    };
+
+
+    const [iframeUrl, setIframeUrl] = useState("");
+
+    useEffect(() => {
+        if (!webConatiner) return;
+
+        webConatiner.on("server-ready", (port, url) => {
+            setIframeUrl(url);
+        });
+    }, [webConatiner]);
+
     return (
 
         <main className="h-screen bg-black text-white relative overflow-hidden flex">
@@ -131,18 +195,20 @@ const Project = () => {
 
 
             {/* Overlay */}
-            <div
-                onClick={() => {
-                    setIsMembersOpen(false);
-                    setIsAddCollaboratorOpen(false);
-                }}
-                className={`fixed inset-0 bg-black/60 backdrop-blur-sm z-40 transition-all duration-300
+            <>
+                <div
+                    onClick={() => {
+                        setIsMembersOpen(false);
+                        setIsAddCollaboratorOpen(false);
+                    }}
+                    className={`fixed inset-0 bg-black/60 backdrop-blur-sm z-40 transition-all duration-300
     ${isMembersOpen ? "opacity-100 visible" : "opacity-0 invisible"}`}
-            />
+                />
+            </>
 
             {/* Collaborators Drawer */}
             <div
-                className={`fixed left-0 top-0 h-screen w-[29.5%]
+                className={`max-[450px]:w-full  fixed left-0 top-0 h-screen w-[29.5%]
     bg-zinc-900/80 backdrop-blur-xl border-r border-zinc-800 z-50 shadow-2xl
     transform transition-all duration-500 ease-[cubic-bezier(0.22,1,0.36,1)]
     ${isMembersOpen
@@ -345,25 +411,50 @@ const Project = () => {
                             <h2 className="text-lg font-semibold text-zinc-200">
                                 {activeFile || "No file selected"}
                             </h2>
+                            <button
+                                onClick={runCode}
+
+                                className="
+                                            flex items-center gap-2
+                                            px-5 py-2.5
+                                            rounded-xl
+                                            bg-gradient-to-r from-indigo-500 to-purple-600
+                                            text-white font-semibold
+                                            shadow-lg shadow-indigo-500/30
+                                            hover:from-indigo-400 hover:to-purple-500
+                                            hover:shadow-purple-500/40
+                                            hover:scale-105
+                                            active:scale-95
+                                            transition-all duration-200
+                                            border border-white/10
+                                            backdrop-blur-md
+                                        "
+                            >
+                                Run
+                            </button>
                         </div>
                         {activeFile && <div className="h-[650px]  overflow-hidden rounded-2xl border border-zinc-800 bg-zinc-900/50 backdrop-blur">
                             <Editor
                                 height="100%"
                                 theme="vs-dark"
                                 path={activeFile}
-                                value={fileTree[activeFile]?.content || ""}
+                                value={fileTree[activeFile]?.file.contents || ""}
                                 onChange={(value) => {
                                     setFileTree(prev => ({
                                         ...prev,
                                         [activeFile]: {
                                             ...prev[activeFile],
-                                            content: value || ""
+                                            file: {
+                                                ...prev[activeFile].file,
+                                                contents: value || ""
+                                            }
                                         }
                                     }));
                                 }}
                             />
+                            
                         </div>}
-                        
+
 
                     </div>
 

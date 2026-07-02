@@ -55,10 +55,13 @@ function normalizeFileTree(tree, prefix = "") {
       value.file &&
       typeof value.file.contents === "string"
     ) {
-      result[currentPath] = { content: value.file.contents };
+      result[currentPath] = {
+        file: {
+          contents: value.file.contents,
+        },
+      };
       continue;
     }
-
     if (typeof value === "object" && !Array.isArray(value)) {
       Object.assign(result, normalizeFileTree(value, currentPath));
     }
@@ -137,8 +140,10 @@ Format:
   "text": "short summary with short explantion of project",
   "fileTree": {
     "package.json": {
-      "content": "..."
+      "file":{
+      "contents": "..."
     }
+    }    
   },
   "buildCommand": {
     "mainItem": "npm",
@@ -150,6 +155,7 @@ Format:
   }
 }
 
+
 Project Rules:
 
 - Generate actual files.
@@ -157,7 +163,7 @@ Project Rules:
 - Include all required files.
 - Include package.json whenever the project uses Node.js.
 - Include buildCommand and startCommand when applicable.
-- Store file contents in the content field.
+- Store file contents in the contents field.
 
 Chat Rules:
 
@@ -190,24 +196,24 @@ export async function generateResult(prompt) {
     let parsed = safeParseJSON(raw);
     let normalized = normalizeFileTree(parsed.fileTree || {});
 
-//     if (!hasFiles(normalized)) {
-//       console.log("Retrying because fileTree is empty...");
+    //     if (!hasFiles(normalized)) {
+    //       console.log("Retrying because fileTree is empty...");
 
-//       raw = await generateWithGemini(`Generate ACTUAL FILES.
+    //       raw = await generateWithGemini(`Generate ACTUAL FILES.
 
-// Do not describe the project.
+    // Do not describe the project.
 
-// The previous response had an empty fileTree.
+    // The previous response had an empty fileTree.
 
-// ${prompt}`);
+    // ${prompt}`);
 
-//       parsed = safeParseJSON(raw);
-//       normalized = normalizeFileTree(parsed.fileTree || {});
-//     }
+    //       parsed = safeParseJSON(raw);
+    //       normalized = normalizeFileTree(parsed.fileTree || {});
+    //     }
 
-//     if (!hasFiles(normalized)) {
-//       throw new Error("Model returned empty fileTree after retry");
-//     }
+    //     if (!hasFiles(normalized)) {
+    //       throw new Error("Model returned empty fileTree after retry");
+    //     }
 
     return {
       text: parsed.text || "",
