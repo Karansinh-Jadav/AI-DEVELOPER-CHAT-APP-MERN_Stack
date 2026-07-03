@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useContext } from 'react'
+import React, { useEffect, useState, useContext, useRef } from 'react'
 import { useLocation } from 'react-router-dom'
 import axios from '../config/axios.js'
 import { initializeSocket, receiveMessage, sendMessage } from '../config/socket.js'
@@ -32,6 +32,7 @@ const Project = () => {
     const [iframeUrl, setIframeUrl] = useState("");
 
     const messageBox = React.createRef();
+    const activeProcessRef = useRef(null);
 
     const handleUserSelect = (id) => {
         if (selectedUsers.includes(id)) {
@@ -140,33 +141,118 @@ const Project = () => {
 
         try {
             console.clear();
-            await webContainer.mount(fileTree);
-            console.log("Installing...");
 
-            const install = await webContainer.spawn("npm", ["install"]);
-            install.output.pipeTo(
-                new WritableStream({
-                    write(data) {
-                        console.log(data);
-                    },
-                })
-            );
-
-            const code = await install.exit;
-            if (code !== 0) {
-                console.log("Install failed");
-                return;
+            if (activeProcessRef.current) {
+                console.log("Killing previous running server process...");
+                activeProcessRef.current.kill();
+                activeProcessRef.current = null;
             }
 
-            console.log("Starting...");
-            const devServer = await webContainer.spawn("npm", ["run", "dev"]);
-            devServer.output.pipeTo(
-                new WritableStream({
-                    write(data) {
-                        console.log(data);
-                    },
-                })
-            );
+            const hasPackageJson = Object.keys(fileTree).includes('package.json');
+
+            if (hasPackageJson) {
+                await webContainer.mount(fileTree);
+                console.log("Installing node modules...");
+
+                const install = await webContainer.spawn("npm", ["install"]);
+                install.output.pipeTo(
+                    new WritableStream({
+                        write(data) {
+                            console.log(data);
+                        },
+                    })
+                );
+
+                const code = await install.exit;
+                if (code !== 0) {
+                    console.log("Install failed");
+                    return;
+                }
+
+                console.log("Starting dev server...");
+                const devServer = await webContainer.spawn("npm", ["run", "dev"]);
+                activeProcessRef.current = devServer;
+
+                devServer.output.pipeTo(
+                    new WritableStream({
+                        write(data) {
+                            console.log(data);
+                        },
+                    })
+                );
+            } else {
+                console.log("No package.json found. Setting up static site server...");
+                const staticServerCode = `
+                    const http = require('http');
+                    const fs = require('fs');
+                    const path = require('path');
+
+                    const PORT = 3000;
+
+                    const MIME_TYPES = {
+                        '.html': 'text/html',
+                        '.css': 'text/css',
+                        '.js': 'text/javascript',
+                        '.json': 'application/json',
+                        '.png': 'image/png',
+                        '.jpg': 'image/jpeg',
+                        '.gif': 'image/gif',
+                        '.svg': 'image/svg+xml',
+                        '.ico': 'image/x-icon'
+                    };
+
+                    const server = http.createServer((req, res) => {
+                        let filePath = '.' + req.url;
+                        if (filePath === './') {
+                            filePath = './index.html';
+                        }
+
+                        const extname = String(path.extname(filePath)).toLowerCase();
+                        const contentType = MIME_TYPES[extname] || 'application/octet-stream';
+
+                        fs.readFile(filePath, (error, content) => {
+                            if (error) {
+                                if(error.code === 'ENOENT') {
+                                    res.writeHead(404, { 'Content-Type': 'text/html' });
+                                    res.end('<h1>404 Not Found</h1>', 'utf-8');
+                                } else {
+                                    res.writeHead(500);
+                                    res.end('Server Error: ' + error.code);
+                                }
+                            } else {
+                                res.writeHead(200, { 'Content-Type': contentType });
+                                res.end(content, 'utf-8');
+                            }
+                        });
+                    });
+
+                    server.listen(PORT, () => {
+                        console.log('Static server is running at port ' + PORT);
+                    });
+                `;
+
+                const extendedFileTree = {
+                    ...fileTree,
+                    '.server.js': {
+                        file: {
+                            contents: staticServerCode
+                        }
+                    }
+                };
+
+                await webContainer.mount(extendedFileTree);
+                console.log("Starting static server...");
+                const staticServer = await webContainer.spawn("node", [".server.js"]);
+                activeProcessRef.current = staticServer;
+
+                staticServer.output.pipeTo(
+                    new WritableStream({
+                        write(data) {
+                            console.log(data);
+                        },
+                    })
+                );
+            }
         } catch (err) {
             console.error(err);
         }
